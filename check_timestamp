@@ -1,0 +1,50 @@
+#!/bin/sh
+
+#    check whether timestamp is recent
+#
+#    Copyright (C) 2014  Thorsten Alteholz
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation in version 3 of the License.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# STAMPFILE will be created by puppet, so you can check whether puppet is
+# running.
+
+STAMPFILE=/usr/local/nagios/createStamp
+
+s2000=`date +%s --date="Jan 1 00:00:00 UTC 2000"`
+
+if [ ! -f $STAMPFILE ]; then
+  echo "CRITICAL - no stampfile available here"
+  exit 2
+fi
+
+now=`date +%s`
+if [ -f $STAMPFILE ]; then
+  stampTime=`cat $STAMPFILE`
+fi
+
+diff=$((now-s2000-stampTime))
+
+# 5h : 3600 * 5 = 18000
+# 20180502, ta, puppet runinterval has been inncreased to 28800 on some hosts, we have to wait a bit longer
+# 20180919, ta, timestamp may be as old as 2x runinterval
+# in case new timestamp was created just after obtaining one, you need to wait at least 2x runinterval
+# if [ $diff -gt 18000 ]; then
+if [ $diff -gt 60000 ]; then
+  echo "CRITICAL - stamp to old: $now  / $((now-s2000))<-> $stampTime"
+  exit 2
+else
+  echo "OK - stamp ok $now / $((now-s2000)) <-> $stampTime"
+fi
+
+exit 0
