@@ -1,0 +1,41 @@
+#!/bin/sh
+
+#    check whether /var/lib/dpkg/lock is available
+#    Copyright (C) 2015  Thorsten Alteholz
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation in version 3 of the License.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+LOCKFILE=/var/lib/dpkg/lock
+LSOF=/usr/bin/lsof
+
+if [ ! -f $LSOF ]; then
+  echo "CRITICAL - $LSOF is missing"
+fi
+
+count=`$LSOF $LOCKFILE|wc -l`
+
+if [ $count -gt 0 ]; then
+  # somebody got a lock
+  whoisit=`$LSOF $LOCKFILE|grep lock|head -1`
+  echo "CRITICAL - >$whoisit<"
+  exit 2
+else 
+  # no lock, great
+  echo "OK - no lockfile $LOCKFILE"
+  # in case of no error check until end, so no exit here
+fi
+
+# everything was fine
+exit 0
+
