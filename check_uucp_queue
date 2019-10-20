@@ -1,0 +1,59 @@
+#!/bin/bash
+
+#    check whether UUCP queue contains to many files
+#
+#    Copyright (C) 2019  Thorsten Alteholz
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation in version 3 of the License.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# 20190121, ta, change allowed from 10 -> 20
+# 20190121, ta, change allowed from 20 -> 50
+# 20190129, ta, change allowed from 50 -> 120	(kernel patches)
+
+UUCPROOT=/var/spool/uucp
+allowed=120
+
+# only UUCP hosts need to have this
+if [ ! -d $UUCPROOT ]; then
+  echo "OK - nothing to check here"
+  exit 0
+fi
+
+cd $UUCPROOT
+for d in *; do
+  # D. X. and C. are possible
+  if [ -d "$d/X." ]; then
+    count=`ls -l $d/X.|wc -l`
+    if [ $count -gt $allowed ]; then
+      echo "CRITICAL - $d/X. contains to many files: $count of $allowed"
+      exit 2
+    fi
+  fi
+  if [ -d "$d/D." ]; then
+    count=`ls -l $d/D.|wc -l`
+    if [ $count -gt $allowed ]; then
+      echo "CRITICAL - $d/D. contains to many files: $count of $allowed"
+      exit 2
+    fi
+  fi
+  if [ -d "$d/C." ]; then
+    count=`ls -l $d/C.|wc -l`
+    if [ $count -gt $allowed ]; then
+      echo "CRITICAL - $d/C. contains to many files: $count of $allowed"
+      exit 2
+    fi
+  fi
+done
+echo "OK - size of uucp queue is fine"
+
+exit 0
