@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#    check whether USV is working as expected
+#
+#    Copyright (C) 2019  Thorsten Alteholz
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation in version 3 of the License.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#
+# check:
+#	STATUS   : ONLINE		== ONLINE
+#	TIMELEFT : 110.0 Minutes	> 10
+#	BCHARGE  : 100.0 Percent	> 70
+# order of checks is important to get the correct error message
+
+APCACCESS=/sbin/apcaccess
+TMPFILE=/tmp/check_usv.tmp
+
+if [ ! -f $APCACCESS ]; then
+  echo "CRITICAL - software missing: $APCACCESS"
+  exit 2
+fi
+
+$APCACCESS > $TMPFILE
+
+function doCheck()
+{
+ WORD=$1
+ VALUE=$2
+ COMPARE=$3
+
+ declare -i count=`grep $WORD $TMPFILE|wc -l`
+ if [ $count -eq 0 ]; then
+   echo "CRITICAL - $WORD is missing: $count"
+   exit 2
+ fi
+ tmpvalue=`grep $WORD $TMPFILE|awk -F":" '{printf("%s",$2)}'|awk '{printf("%s",$1)}'`
+ if [ ! $VALUE $COMPARE $tmpvalue ]; then
+   echo "CRITICAL - $WORD should have value $VALUE but has: $tmpvalue  ($COMPARE)"
+   exit 2
+ fi
+ 
+}
+
+doCheck STATUS ONLINE "=="
+doCheck TIMELEFT 10 "<"
+doCheck BCHARGE 70 ">"
+
+echo "OK - everything is fine"
+
+rm -f $TMPFILE
+exit 0
